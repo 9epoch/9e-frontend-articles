@@ -8,6 +8,7 @@
 import * as React from "react"
 import { useStaticQuery, graphql } from "gatsby"
 import { StaticImage } from "gatsby-plugin-image"
+import CycleScrambler from "./CycleScrambler";
 
 const Bio = () => {
   const data = useStaticQuery(graphql`
@@ -44,7 +45,40 @@ const Bio = () => {
       />
       {author?.name && (
         <p>
-          <strong>{author.name}</strong> {author?.summary || null}
+          <p>
+            9epoch is a team of{"  "}
+            <CycleScrambler
+              style={{color:'#2c04b7' }}
+              intervalMs={3000}
+              iterations={9}
+              scrambleTextLength={12}
+              charset={[
+                "#",
+                "$",
+                "@",
+                "%",
+                "&",
+                "*",
+                "o",
+                "0",
+                ":",
+                "8",
+                "x",
+                "X",
+                "O",
+                "Q",
+              ]}
+              textList={[
+                "data scientists",
+                "quant engineers",
+                "cloud architects",
+                "quantitative analysts",
+                "software engineers",
+              ]}
+            />
+            {". "}
+          </p>
+          <p>We build impactful solutions in finance and tech.</p>
 
         </p>
       )}

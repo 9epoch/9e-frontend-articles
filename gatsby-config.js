@@ -9,7 +9,7 @@
  */
 module.exports = {
   siteMetadata: {
-    title: `9epoch blog`,
+    title: `9epoch articles & research`,
     author: {
       name: `9epoch`,
       summary: `is a collaborative team based in Melbourne. We are dedicated to building impactful solutions at the crossroads of finance and technology.`,
@@ -110,7 +110,7 @@ module.exports = {
     {
       resolve: `gatsby-plugin-manifest`,
       options: {
-        name: `9epoch Blog`,
+        name: `9epoch articles & research`,
         short_name: `Gatsby`,
         start_url: `/`,
         background_color: `#ffffff`,
