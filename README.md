@@ -5,8 +5,8 @@ Welcome to the 9epoch blog! Managing and adding new content is a breeze with our
 ## Setup Instructions
 1. Clone the Repository.
 2. Ensure you have Gatsby CLI and Node.js installed on your device.
-3. Install Node Modules using "npm install"
-4. Run the app locally using "gatsby develop"
+3. Install Node Modules using "npm install".
+4. Run the app locally using "gatsby develop".
 
 ## Adding a New Blog Post
 
