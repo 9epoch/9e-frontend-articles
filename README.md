@@ -1,6 +1,6 @@
 # Blog Readme
 
-Welcome to our blog! Managing and adding new content is a breeze with our simple process. Follow the steps below to contribute and share your insights:
+Welcome to the 9epoch blog! Managing and adding new content is a breeze with our simple process. Follow the steps below to add new posts to the blog:
 
 ## Setup Instructions
 1. Clone the Repository.
