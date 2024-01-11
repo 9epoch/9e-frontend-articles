@@ -1,0 +1,101 @@
+name: Deploy Prod
+
+permissions:
+  id-token: write
+  contents: write
+
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_increment:
+        description: 'Version increment'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+
+env:
+  REGION: ap-southeast-2
+  BUCKET_NAME: 9e-frontend-blog
+  CF_DISTRIBUTION_ID: E39EQWOL7WXNFS
+
+jobs:
+
+  build-prod-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Change pathPrefix
+        run: |
+          FILE="gatsby-config.js"
+          
+          if [ -f "$FILE" ]; then
+              awk '{gsub(/pathPrefix: `\/articles-test`/, "pathPrefix: `/articles`")}1' "$FILE" > temp && mv temp "$FILE"
+              echo "Replacement done."
+          else
+              echo "Error: $FILE does not exist."
+          fi
+        
+          
+      - name: Build using npm
+        run: |
+          npm ci
+ 
+      - uses: enriikke/gatsby-gh-pages-action@v2
+        with:
+          gatsby-args: --prefix-paths
+          skip-publish: true
+
+    
+      - name: Assume the test-deploy-role
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::742129616206:role/github-9e-frontend-blog
+          aws-region: ${{ env.REGION }}
+
+      - name: Deploy to prod bucket
+        run: |
+          aws s3 sync public s3://${{ env.BUCKET_NAME }}/articles/ --delete
+          aws cloudfront create-invalidation --distribution-id ${{ env.CF_DISTRIBUTION_ID }} --paths '/*'
+
+      - name: Create release
+        uses: actions/github-script@v6
+        env:
+          VERSION_INCREMENT: ${{ github.event.inputs.version_increment }}
+        with:
+          script: |
+            async function generateTagName() {
+              const {VERSION_INCREMENT} = process.env;
+              const releases = await github.rest.repos.listReleases({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+              const versions = releases.data
+                .map(({tag_name}) => tag_name.replace(/^v/, ''))
+                .filter(t => /^\d+\.\d+.\d+$/.test(t))
+                .sort((a, b) => a.localeCompare(b, undefined, {numeric: true}))
+                .reverse();
+              if (versions.length === 0) return 'v1.0.0';
+              const [major, minor, patch] = versions[0].split('.').map(Number);
+              return VERSION_INCREMENT === 'major'
+                ? `v${major + 1}.0.0`
+                : VERSION_INCREMENT === 'minor'
+                ? `v${major}.${minor + 1}.0`
+                : `v${major}.${minor}.${patch + 1}`;
+            }
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: await generateTagName(),
+              target_commitish: context.sha,
+            });

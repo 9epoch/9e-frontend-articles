@@ -8,6 +8,8 @@
  * @type {import('gatsby').GatsbyConfig}
  */
 module.exports = {
+  pathPrefix: `/articles-test`,
+
   siteMetadata: {
     title: `9epoch articles & research`,
     author: {
@@ -15,9 +17,9 @@ module.exports = {
       summary: `is a collaborative team based in Melbourne. We are dedicated to building impactful solutions at the crossroads of finance and technology.`,
     },
     description: `A starter blog demonstrating what Gatsby can do.`,
-    siteUrl: `https://gatsbystarterblogsource.gatsbyjs.io/`,
+    siteUrl: `https://9epoch.ai/`,
     social: {
-      twitter: `kylemathews`,
+      twitter: `nathanszei`,
     },
   },
   plugins: [
