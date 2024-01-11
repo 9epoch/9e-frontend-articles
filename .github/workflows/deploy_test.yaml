@@ -16,7 +16,7 @@ on:
 env:
   REGION: ap-southeast-2
   BUCKET_NAME: 9e-frontend-blog-test
-  CF_DISTRIBUTION_ID: TBA
+  CF_DISTRIBUTION_ID: E39EQWOL7WXNFS
 
 jobs:
 
@@ -50,5 +50,5 @@ jobs:
       - name: Deploy to testing bucket
         run: |
           aws s3 sync public s3://${{ env.BUCKET_NAME }}/articles-test/ --delete
-          aws cloudfront create-invalidation --distribution-id {{ env.CF_DISTRIBUTION_ID }} --paths '/*'
+          aws cloudfront create-invalidation --distribution-id ${{ env.CF_DISTRIBUTION_ID }} --paths '/*'
       
