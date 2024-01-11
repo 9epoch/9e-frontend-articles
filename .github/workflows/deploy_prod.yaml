@@ -53,12 +53,12 @@ jobs:
       - name: Assume the test-deploy-role
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          role-to-assume: arn:aws:iam::742129616206:role/github-9e-frontend-blog-test
+          role-to-assume: arn:aws:iam::742129616206:role/github-9e-frontend-blog
           aws-region: ${{ env.REGION }}
 
       - name: Deploy to prod bucket
         run: |
-          aws s3 sync public s3://${{ env.BUCKET_NAME }}/articles-test/ --delete
+          aws s3 sync public s3://${{ env.BUCKET_NAME }}/articles/ --delete
           aws cloudfront create-invalidation --distribution-id ${{ env.CF_DISTRIBUTION_ID }} --paths '/*'
 
       - name: Create release
