@@ -49,7 +49,6 @@ jobs:
           
       - name: Build using npm
         run: |
-          npm install
           npm ci
  
       - uses: enriikke/gatsby-gh-pages-action@v2
