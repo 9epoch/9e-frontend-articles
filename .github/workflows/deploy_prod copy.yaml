@@ -1,0 +1,120 @@
+name: Deploy Prod
+
+permissions:
+  id-token: write
+  contents: write
+
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_increment:
+        description: 'Version increment'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+
+env:
+  SAM_TEMPLATE: template.yaml
+  STACK_NAME: prod-9e-etl-feature-groups ##Change name of stack here
+  REGION: ap-southeast-2
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v4
+
+      - name: Replace string in requirements.txt
+        run: |
+          # Find all requirements.txt files in subdirectories of the current directory
+          for file in $(find . -name requirements.txt -o -name dev-requirements.txt); do
+            # Replace "<GITHUB_TOKEN>" with the value of the GITHUB_TOKEN env variable
+            sed -i "s/<GITHUB_TOKEN>/${{ secrets.UTIL_DATA_ACCESS_TOKEN }}/g" $file
+          done
+  
+
+
+      - name: Install dependencies
+        run: |
+          cd feature_group_update
+          pip install -r dev-requirements.txt
+          pip install pytest-md pytest-emoji
+      
+      - name: Run tests
+        run: |
+          cd feature_group_update
+          pytest tests/ -v --md=report.md --emoji
+          cat report.md >> $GITHUB_STEP_SUMMARY
+    
+      - name: Fail if tests fail
+        if: failure()
+        run: exit 1
+
+  build-prod-and-deploy:
+    needs: run-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+  
+      - name: Assume the sam-role
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::742129616206:role/github-action-sam-role
+          aws-region: ${{ env.REGION }}
+      
+      - name: Replace string in requirements.txt
+        run: |
+          # Find all requirements.txt files in subdirectories of the current directory
+          for file in $(find . -name requirements.txt); do
+            # Replace "<GITHUB_TOKEN>" with the value of the GITHUB_TOKEN env variable
+            sed -i "s/<GITHUB_TOKEN>/${{ secrets.UTIL_DATA_ACCESS_TOKEN }}/g" $file
+          done
+        
+      - name: Build resources
+        run: sam build --use-container
+      
+      - name: Deploy to production account
+        run: |
+          sam deploy --stack-name ${STACK_NAME}  --parameter-overrides=Environment=prod  --capabilities CAPABILITY_IAM  --region ${REGION}  --resolve-image-repos --resolve-s3 --no-confirm-changeset --no-fail-on-empty-changeset
+
+      - name: Create release
+        uses: actions/github-script@v6
+        env:
+          VERSION_INCREMENT: ${{ github.event.inputs.version_increment }}
+        with:
+          script: |
+            async function generateTagName() {
+              const {VERSION_INCREMENT} = process.env;
+              const releases = await github.rest.repos.listReleases({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+              const versions = releases.data
+                .map(({tag_name}) => tag_name.replace(/^v/, ''))
+                .filter(t => /^\d+\.\d+.\d+$/.test(t))
+                .sort((a, b) => a.localeCompare(b, undefined, {numeric: true}))
+                .reverse();
+              if (versions.length === 0) return 'v1.0.0';
+              const [major, minor, patch] = versions[0].split('.').map(Number);
+              return VERSION_INCREMENT === 'major'
+                ? `v${major + 1}.0.0`
+                : VERSION_INCREMENT === 'minor'
+                ? `v${major}.${minor + 1}.0`
+                : `v${major}.${minor}.${patch + 1}`;
+            }
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: await generateTagName(),
+              target_commitish: context.sha,
+            });

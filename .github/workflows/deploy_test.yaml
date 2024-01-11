@@ -1,0 +1,53 @@
+name: Deploy blog site to test
+
+permissions:
+  id-token: write
+  contents: read
+
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - 'main'
+
+env:
+  REGION: ap-southeast-2
+  BUCKET_NAME: 9e-frontend-blog-test
+  CF_DISTRIBUTION_ID: TBA
+
+jobs:
+
+  build-test-and-deploy:
+    if: startsWith(github.ref, 'refs/heads/main') && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 2021
+      - name: Build using npm
+        run: |
+          npm install
+          npm ci
+ 
+      - uses: enriikke/gatsby-gh-pages-action@v2
+        with:
+          gatsby-args: --prefix-paths
+
+    
+      - name: Assume the test-deploy-role
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::742129616206:role/github-9e-frontend-blog-test
+          aws-region: ${{ env.REGION }}
+
+      - name: Deploy to testing bucket
+        run: |
+          aws s3 sync public s3://${{ env.BUCKET_NAME }}/articles-test/ --delete
+          aws cloudfront create-invalidation --distribution-id {{ env.CF_DISTRIBUTION_ID }} --paths '/*'
+      
