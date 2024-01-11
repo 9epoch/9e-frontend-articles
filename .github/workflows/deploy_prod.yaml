@@ -37,7 +37,15 @@ jobs:
 
       - name: Change pathPrefix
         run: |
-          sed -i 's/pathPrefix: "\/articles-test"/pathPrefix: "\/articles"/g' gatsby-config.js
+          FILE="gatsby-config.js"
+          
+          if [ -f "$FILE" ]; then
+              awk '{gsub(/pathPrefix: `\/articles-test`/, "pathPrefix: `/articles`")}1' "$FILE" > temp && mv temp "$FILE"
+              echo "Replacement done."
+          else
+              echo "Error: $FILE does not exist."
+          fi
+        
           
       - name: Build using npm
         run: |
