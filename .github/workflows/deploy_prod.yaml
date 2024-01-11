@@ -26,7 +26,6 @@ env:
 jobs:
 
   build-prod-and-deploy:
-    if: startsWith(github.ref, 'refs/heads/main') && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
